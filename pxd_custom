@@ -1,0 +1,320 @@
+'''
+This is custom code developed for Pioneer Natural Resources SCADA project.
+'''
+class pxd(object):
+	def __init__(self,tagPath):
+		self.version = 1.0		# this is our program version number
+		self.tagPath = tagPath	# this is our tagpath used in our functions below
+	def rightClick(self):		# this is our generic right click menu function
+		import system
+		def addPenCtg(event): #function def to add a pen to a graph
+			import system
+			system.ctg.addPen(self.tagPath) #add a pen for our tagPath
+			
+		def removePenCtg(event): #function def to remove a pen to a graph
+			import system	
+			system.ctg.deletePen(str(self.tagPath)) #remove a pen for our tagPath		
+			
+		def clearGraphCtg(event):
+			import system
+			system.ctg.clearPens() #remove all the pens from our CTG
+			
+		def clearGraph(event):
+			import system
+			import shared
+			shared.ctg.addPens.clearCurrentWindow() #shared system function that clears easy chart on current window
+			
+		def openCtg(event):
+			import system
+			windowPath = 'CTG/Graph Trend' #path to the window we will be opening
+			system.nav.swapWindow(windowPath)
+			system.nav.centerWindow(windowPath) #center CTG Window
+					
+		def addLocalPen(event):
+			import system
+			shared.ctg.addPens.toCurrentWindow(self.tagPath) #add pen to local graph
+
+		def removeLocalPen(event): #function def to remove a pen to a graph
+			import system	
+			shared.ctg.addPens.fromCurrentWindow(self.tagPath) #add pen to local graph
+			
+		# lists for our menu names and menu functions
+		menuNames = []
+		menuFunctions = []
+		
+		menuNames.append('Add to local trend')
+		menuFunctions.append(addLocalPen)
+		
+		menuNames.append('Remove from local trend')
+		menuFunctions.append(removeLocalPen)
+		
+		menuNames.append('Clear trend on current Window')
+		menuFunctions.append(clearGraph)
+		
+		if self.tagPath in system.ctg.getPensString():
+			menuNames.append('Remove from CTG')
+			menuFunctions.append(removePenCtg)
+		else:	
+			menuNames.append('Add to CTG')
+			menuFunctions.append(addPenCtg)
+			
+		menuNames.append('Clear CTG')
+		menuFunctions.append(clearGraphCtg)
+		
+		menuNames.append('Open CTG')
+		menuFunctions.append(openCtg)
+		
+		menu = system.gui.createPopupMenu(menuNames,menuFunctions)
+		return menu
+	def rightClickTable(self):	# this is our right click from a table function
+		import system
+		def addPenCtg(event): #function def to add a pen to a graph
+			import system
+			system.ctg.addPen(self.tagPath) #add a pen for our tagPath
+			
+		def removePenCtg(event): #function def to remove a pen to a graph
+			import system	
+			system.ctg.deletePen(str(self.tagPath)) #remove a pen for our tagPath		
+			
+		def clearGraphCtg(event):
+			import system
+			system.ctg.clearPens() #remove all the pens from our CTG
+			
+		def clearGraph(event):
+			import system
+			import shared
+			shared.ctg.addPens.clearCurrentWindow() #shared system function that clears easy chart on current window
+			
+		def openCtg(event):
+			import system
+			windowPath = 'CTG/Graph Trend' #path to the window we will be opening
+			system.nav.swapWindow(windowPath)
+			system.nav.centerWindow(windowPath) #center CTG Window
+					
+		def addLocalPen(event):
+			import system
+			shared.ctg.addPens.toCurrentWindow(self.tagPath) #add pen to local graph
+
+		def removeLocalPen(event): #function def to remove a pen to a graph
+			import system	
+			shared.ctg.addPens.fromCurrentWindow(self.tagPath) #add pen to local graph
+			
+		# lists for our menu names and menu functions
+		menuNames = []
+		menuFunctions = []
+		
+		menuNames.append('Add to local trend')
+		menuFunctions.append(addLocalPen)
+		
+		menuNames.append('Remove from local trend')
+		menuFunctions.append(removeLocalPen)
+		
+		menuNames.append('Clear trend on current Window')
+		menuFunctions.append(clearGraph)
+		
+		if self.tagPath in system.ctg.getPensString():
+			menuNames.append('Remove from CTG')
+			menuFunctions.append(removePenCtg)
+		else:	
+			menuNames.append('Add to CTG')
+			menuFunctions.append(addPenCtg)
+			
+		menuNames.append('Clear CTG')
+		menuFunctions.append(clearGraphCtg)
+		
+		menuNames.append('Open CTG')
+		menuFunctions.append(openCtg)
+		
+		menu = system.gui.createPopupMenu(menuNames,menuFunctions)
+		return menu
+	def penQuery(self):
+		import system
+		# this is our query to bring back our tagpen row
+		query = "SELECT historicalProvider, description as 'NAME', ignfullpath as 'TAG_PATH', aggregationMode as 'AGGREGATION_MODE', axis as 'AXIS', subplot as 'SUBPLOT', enabled as 'ENABLED', color as 'COLOR', dashPattern as 'DASH_PATTERN', renderStyle as 'RENDER_STYLE', lineWeight as 'LINE_WEIGHT', shape as 'SHAPE', fillShape as 'FILL_SHAPE', groupName as 'GROUP_NAME', digital as 'DIGITAL', overrideAutocolor as 'OVERRIDE_AUTOCOLOR', hidden as 'HIDDEN', userSelect as 'USER_SELECTABLE', sortOrder as 'SORT_ORDER', userRemovable as 'USER_REMOVABLE' FROM pxd_tags WHERE ignfullpath = ?"
+		
+		# strip off /value and use that path to query the tag_database
+		ignfullpath = self.tagPath[:self.tagPath.rfind('/')]
+		args = [ignfullpath]
+		databaseConnection = 'tag_database'
+		data = system.db.runPrepQuery(query,args,databaseConnection)
+		# if we return a result add the historical provider in and return that row.
+		if len(data) == 1:
+			row = [value for row in data for value in row]
+
+			historicalProvider = row[0]
+			ignfullpath = row[2]
+
+			index = ignfullpath.rfind(']') + 1
+			path = ignfullpath[index:]
+			TAG_PATH = historicalProvider + path
+
+			row.pop(0)# remove our historicalPath
+			row[1] = TAG_PATH# change our tagpath to our newly created tagpath with historical provider
+
+			return row
+	def addPen(self,row,datasetPath):
+		import system
+		currentPens = system.tag.read(datasetPath).value
+		newPens = system.dataset.addRow(currentPens,row)
+		system.tag.write(datasetPath,newPens)
+
+
+class rightClick(object): # this is our base rightCLick menu
+	'''
+	These are all of the right click classes
+	'''		
+	def __init__(self,tagPath):
+		self.tagPath = tagPath		
+class rightClickTable(rightClick): # this is right click for tables, extends rightClick
+	def buildMenu(self):
+		import system
+		def addPenCtg(event): #function def to add a pen to a graph
+			import system
+			system.ctg.addPen(self.tagPath) #add a pen for our tagPath
+			
+		def removePenCtg(event): #function def to remove a pen to a graph
+			import system	
+			system.ctg.deletePen(str(self.tagPath)) #remove a pen for our tagPath		
+			
+		def clearGraphCtg(event):
+			import system
+			system.ctg.clearPens() #remove all the pens from our CTG
+			
+		def clearGraph(event):
+			import system
+			import shared
+			shared.ctg.addPens.clearCurrentWindow() #shared system function that clears easy chart on current window
+			
+		def openCtg(event):
+			import system
+			windowPath = 'CTG/Graph Trend' #path to the window we will be opening
+			system.nav.swapWindow(windowPath)
+			system.nav.centerWindow(windowPath) #center CTG Window
+					
+		def addLocalPen(event):
+			import system
+			shared.ctg.addPens.toCurrentWindow(self.tagPath) #add pen to local graph
+
+		def removeLocalPen(event): #function def to remove a pen to a graph
+			import system	
+			shared.ctg.addPens.fromCurrentWindow(self.tagPath) #add pen to local graph
+			
+		# lists for our menu names and menu functions
+		menuNames = []
+		menuFunctions = []
+		
+		menuNames.append('Add to local trend')
+		menuFunctions.append(addLocalPen)
+		
+		menuNames.append('Remove from local trend')
+		menuFunctions.append(removeLocalPen)
+		
+		menuNames.append('Clear trend on current Window')
+		menuFunctions.append(clearGraph)
+		
+		menuNames.append('Add to CTG')
+		menuFunctions.append(addPenCtg)
+			
+		menuNames.append('Clear CTG')
+		menuFunctions.append(clearGraphCtg)
+		
+		menuNames.append('Open CTG')
+		menuFunctions.append(openCtg)
+		
+		menu = system.gui.createPopupMenu(menuNames,menuFunctions)
+		return menu
+class rightClickTemplate(rightClick): # this is our right click for templates, inherits rightClick as well
+	def buildMenu(self):
+		pass
+
+
+class clickToGraph(object): # these are the functions used for dynamic click to graph
+	'''
+	These classes are used for click to graph functions.
+	These functions are called directly and in the menus above.
+	'''
+	def __init__(self,tagPath,trendPath):
+		self.tagPath = tagPath
+		self.trendPath = trendPath
+	def addToTrend(self):	 # adds a pen to the dataset at the client tag trendPath
+		pass		
+	def removeFromTrend(self): # removes a pen from client dataset tag at the trendPath
+		pass
+	def penQuery(self): # queries the database for the tagPath
+		import system
+		# this is our query to bring back our tagpen row
+		query = "SELECT historicalProvider, description as 'NAME', ignfullpath as 'TAG_PATH', aggregationMode as 'AGGREGATION_MODE', axis as 'AXIS', subplot as 'SUBPLOT', enabled as 'ENABLED', color as 'COLOR', dashPattern as 'DASH_PATTERN', renderStyle as 'RENDER_STYLE', lineWeight as 'LINE_WEIGHT', shape as 'SHAPE', fillShape as 'FILL_SHAPE', groupName as 'GROUP_NAME', digital as 'DIGITAL', overrideAutocolor as 'OVERRIDE_AUTOCOLOR', hidden as 'HIDDEN', userSelect as 'USER_SELECTABLE', sortOrder as 'SORT_ORDER', userRemovable as 'USER_REMOVABLE' FROM pxd_tags WHERE ignfullpath = ?"
+		
+		# strip off /value and use that path to query the tag_database
+		ignfullpath = self.tagPath[:self.tagPath.rfind('/')]
+		args = [ignfullpath]
+		databaseConnection = 'tag_database'
+		data = system.db.runPrepQuery(query,args,databaseConnection)
+		# if we return a result add the historical provider in and return that row.
+		if len(data) == 1:
+			row = [value for row in data for value in row]
+
+			historicalProvider = row[0]
+			ignfullpath = row[2]
+
+			index = ignfullpath.rfind(']') + 1
+			path = ignfullpath[index:]
+			TAG_PATH = historicalProvider + path
+
+			row.pop(0)# remove our historicalPath
+			row[1] = TAG_PATH# change our tagpath to our newly created tagpath with historical provider
+
+				return row
+		
+
+class powerTable(object):
+	'''
+	These classes are used for tag driven power table extension fucntions
+	and custom methods.
+
+	These methods require a power table with 3 custom properties defined on the table
+
+	----------------------------
+	sites		: 2col dataset
+	----------------------------
+	tagpaths	: 2col dataset
+	----------------------------
+	windowPath	: string4
+	----------------------------
+	'''
+	def __init__(self,table):
+		# self is a reference to this class object
+		# table is a reference to the table object in ignition calling this class
+		self.table = table
+	'''
+		These are extension functions on the power table
+	'''
+	def configureCell(self,value,textValue,selected,rowIndex,colIndex,colName,rowView,colView):
+		# function called when the cells are configured
+		pass
+	def configureEditor(self,colIndex,colName):
+		pass
+	def configureHeaderStyle(self,colIndex,colName):
+		pass
+	def initialize(self):
+		# initialize extension function
+		pass
+	def onCellEdit(self,rowIndex,colIndex,colName,oldValue,newValue):
+		# function called when the user edits a cell
+		pass
+	def onDoubleClick(self,rowIndex,colIndex,colName,value,event):
+		# when the user double clicks on a row
+		print value
+	def onPopupTrigger(self,rowIndex,colIndex,colName,value,event):
+		# when the user right clicks a cell
+		pass
+	def onRowsDropped(self,sourceTable,rows,rowData,dropIndexLocation):
+		pass
+	'''
+		These are custom methods on the power table
+	'''
+	def readValues(self):
+		# when the user manually refreshes the table
+		# also called when the table is initialized and
+		# when a timer on the window invokes this method
+		pass
