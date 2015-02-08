@@ -264,7 +264,9 @@ class clickToGraph(object): # these are the functions used for dynamic click to 
 			row.pop(0)# remove our historicalPath
 			row[1] = TAG_PATH# change our tagpath to our newly created tagpath with historical provider
 
-				return row
+			return row
+		else:
+			pass
 		
 
 class powerTable(object):
@@ -307,14 +309,56 @@ class powerTable(object):
 		print value
 	def onPopupTrigger(self,rowIndex,colIndex,colName,value,event):
 		# when the user right clicks a cell
-		pass
+		self.table.selectedRow = rowIndex
 	def onRowsDropped(self,sourceTable,rows,rowData,dropIndexLocation):
 		pass
 	'''
 		These are custom methods on the power table
 	'''
 	def readValues(self):
+		import system
 		# when the user manually refreshes the table
 		# also called when the table is initialized and
 		# when a timer on the window invokes this method
-		pass
+		headers = ['Site'] #these are the headers that go at the top of the table--this starts as an empty list
+		siteNames = []
+		tagPaths = []#these are the tagPaths that go in the table--this starts as an empty list
+		sitePaths = [] #these are the udtPaths used to get values--this starts as an empty list
+		fullPaths = [] #these are the fullPaths used to read values--this starts as an empty list
+		
+		# put headers and tag paths into lists... this creates two raw lists with all headers and raw tagPaths
+		data = self.table.tagPaths
+		for row in range(data.rowCount):
+			tagPaths.append(str(data.getValueAt(row,0)))
+			headers.append(str(data.getValueAt(row, 1)))
+		
+		# put udtPaths into a list
+		data = self.table.sites
+		for row in range(data.rowCount):
+			sitePaths.append(str(data.getValueAt(row,0)))
+			siteNames.append(str(data.getValueAt(row,1)))
+			
+		# concatenate site paths with tag paths, put into a fullPath list
+		for sitePath in sitePaths:
+			for tagPath in tagPaths:
+				fullPaths.append(sitePath + tagPath)
+		#fullPaths = [site + tagPath for sitePath in sitePaths for tagPath in tagPaths]
+		
+		# read all the full tagPaths to create a list of values
+		values = system.tag.readAll(fullPaths)
+		
+		
+		# build our dataset
+		data = []
+		colCount = len(tagPaths)
+		rowCount = len(sitePaths)
+		for y in range(rowCount):
+			name = siteNames[y]
+			row = [name]# reset row each loop
+			for x in range(colCount):
+				# append values to row indexing by the row index(y) multiplied by colCount plus column index(x)
+				row.append(values[y * colCount + x].value)
+			data.append(row)
+			
+		# put the data into the table
+		self.table.data = system.dataset.toDataSet(headers, data)
