@@ -1,7 +1,5 @@
-'''
-This is custom code developed for Pioneer Natural Resources SCADA project.
-'''
-class pxd(object):
+
+class myFunctions(object):
 	def __init__(self,tagPath):
 		self.version = 1.0		# this is our program version number
 		self.tagPath = tagPath	# this is our tagpath used in our functions below
